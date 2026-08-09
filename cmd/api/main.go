@@ -1,39 +1,51 @@
-package db
+package main
 
 import (
 	"context"
-	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"go-shop-2/internal/config"
+	"go-shop-2/internal/db"
+	"go-shop-2/internal/router"
 )
 
-type DB struct {
-	Pool *pgxpool.Pool
-}
+func main() {
+	cfg := config.Load()
 
-func New(databaseURL string) (*DB, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	pool, err := pgxpool.New(ctx, databaseURL)
+	database, err := db.New(cfg.DatabaseURL)
 	if err != nil {
-		return nil, fmt.Errorf("create pool: %w", err)
+		log.Fatalf("db connection failed: %v", err)
+	}
+	defer database.Close()
+
+	r := router.New(database, cfg.JWTSecret, cfg.AdminAPIKey, cfg.SupabaseURL, cfg.SupabaseKey)
+
+	srv := &http.Server{
+		Addr:    ":" + cfg.Port,
+		Handler: r,
 	}
 
-	if err := pool.Ping(ctx); err != nil {
-		return nil, fmt.Errorf("ping database: %w", err)
-	}
+	go func() {
+		log.Printf("Server running on http://localhost:%s", cfg.Port)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("listen error: %v", err)
+		}
+	}()
 
-	return &DB{Pool: pool}, nil
-}
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
 
-func (db *DB) Ping(ctx context.Context) error {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	log.Println("shutting down...")
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	return db.Pool.Ping(ctx)
-}
-
-func (db *DB) Close() {
-	db.Pool.Close()
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		log.Fatalf("forced shutdown: %v", err)
+	}
+	log.Println("server stopped")
 }

@@ -12,28 +12,46 @@ type Config struct {
 	Port        string
 	JWTSecret   string
 	AdminAPIKey string
+	SupabaseURL string
+	SupabaseKey string
 }
 
 func Load() *Config {
-	_ = godotenv.Load()
+	if err := godotenv.Load(); err != nil {
+		log.Printf("warning: .env file not found, relying on environment variables")
+	} else {
+		log.Println("info: loaded .env file")
+	}
 
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
 
-	return &Config{
+	cfg := &Config{
 		DatabaseURL: require("DATABASE_URL"),
 		Port:        port,
 		JWTSecret:   require("JWT_SECRET"),
 		AdminAPIKey: require("ADMIN_API_KEY"),
+		SupabaseURL: require("SUPABASE_URL"),
+		SupabaseKey: require("SUPABASE_SERVICE_ROLE_KEY"),
 	}
+
+	if len(cfg.JWTSecret) < 32 {
+		log.Fatalf("JWT_SECRET must be at least 32 characters")
+	}
+	if len(cfg.AdminAPIKey) < 32 {
+		log.Fatalf("ADMIN_API_KEY must be at least 32 characters")
+	}
+
+	log.Println("info: config loaded successfully")
+	return cfg
 }
 
 func require(key string) string {
 	v := os.Getenv(key)
 	if v == "" {
-		log.Fatalf("missing required env var: %s", key)
+		log.Fatalf("FATAL: missing required env var: %s", key)
 	}
 	return v
 }
