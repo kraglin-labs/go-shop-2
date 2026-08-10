@@ -23,7 +23,7 @@ func main() {
 	}
 	defer database.Close()
 
-	r := router.New(database, cfg.JWTSecret, cfg.AdminAPIKey, cfg.SupabaseURL, cfg.SupabaseKey)
+	r := router.New(database, cfg.JWTSecret, cfg.AdminAPIKey, cfg.SupabaseURL, cfg.SupabaseKey, cfg.BrevoAPIKey, cfg.AdminEmail, cfg.FromEmail)
 
 	srv := &http.Server{
 		Addr:    ":" + cfg.Port,

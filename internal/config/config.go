@@ -8,12 +8,15 @@ import (
 )
 
 type Config struct {
-	DatabaseURL string
-	Port        string
-	JWTSecret   string
-	AdminAPIKey string
-	SupabaseURL string
-	SupabaseKey string
+	DatabaseURL  string
+	Port         string
+	JWTSecret    string
+	AdminAPIKey  string
+	SupabaseURL  string
+	SupabaseKey  string
+	BrevoAPIKey  string
+	AdminEmail   string
+	FromEmail    string
 }
 
 func Load() *Config {
@@ -29,12 +32,15 @@ func Load() *Config {
 	}
 
 	cfg := &Config{
-		DatabaseURL: require("DATABASE_URL"),
-		Port:        port,
-		JWTSecret:   require("JWT_SECRET"),
-		AdminAPIKey: require("ADMIN_API_KEY"),
-		SupabaseURL: require("SUPABASE_URL"),
-		SupabaseKey: require("SUPABASE_SERVICE_ROLE_KEY"),
+		DatabaseURL:  require("DATABASE_URL"),
+		Port:         port,
+		JWTSecret:    require("JWT_SECRET"),
+		AdminAPIKey:  require("ADMIN_API_KEY"),
+		SupabaseURL:  require("SUPABASE_URL"),
+		SupabaseKey:  require("SUPABASE_SERVICE_ROLE_KEY"),
+		BrevoAPIKey:  require("BREVO_API_KEY"),
+		AdminEmail:   require("ADMIN_EMAIL"),
+		FromEmail:    require("FROM_EMAIL"),
 	}
 
 	if len(cfg.JWTSecret) < 32 {
